@@ -1,4 +1,6 @@
 github.com/mileusna/useragent v1.2.1 h1:p3RJWhi3LfuI6BHdddojREyK3p6qX67vIfOVMnUIVr0=
 github.com/mileusna/useragent v1.2.1/go.mod h1:3d8TOmwL/5I8pJjyVDteHtgDGcefrFUX4ccGOMKNYYc=
+github.com/saxon134/go-utils v0.1.6 h1:8nvXhpkqVCri6Z25OzcjR5n1CoJbvuAQxYl6s6DHO/A=
+github.com/saxon134/go-utils v0.1.6/go.mod h1:aDzZQ1h1mCsZOGniAaSr+C+nb6/qJm3oe9PQ+A9N5vk=
 github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5gKV8=
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
