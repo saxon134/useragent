@@ -55,8 +55,10 @@ func Parse(userAgent string) UserAgent {
 		result.DevBrand = "Oneplus"
 	} else if strings.HasPrefix(result.DevModel, "ZTE") {
 		result.DevBrand = "ZTE"
+	} else if strings.Contains(userAgent, "Hinova") {
+		result.DevBrand = "Hinova"
 	} else {
-		result.DevBrand = parseBrand(result.DevModel)
+		result.DevBrand = parseBrand(result.DevModel, userAgent)
 	}
 
 	var brand = strings.ToUpper(result.DevBrand)
