@@ -9,7 +9,7 @@
 手机品牌收集参考：https://github.com/matiji66/MobileModels
 
 
-### 安装教程
+### 安装
 ```
 go get -u github.com/saxon134/useragent
 ```
