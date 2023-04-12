@@ -1,9 +1,15 @@
 package useragent
 
 import (
+	"bufio"
 	"github.com/mileusna/useragent"
 	"github.com/saxon134/go-utils/saData/saHit"
+	"io"
+	"net/http"
+	"os"
 	"strings"
+	"syscall"
+	"time"
 )
 
 type UserAgent struct {
@@ -12,6 +18,30 @@ type UserAgent struct {
 	DevType   int    //0-未知 1-手机 2-平板 3-PC
 	DevBrand  string //手机品牌，如华为
 	DevModel  string //手机型号，如：mate50
+}
+
+func init() {
+	//文件不存在，或者下载时间超过30天
+	var needRefresh = false
+	finfo, _ := os.Stat("PhoneModels.txt")
+	if finfo == nil {
+		needRefresh = true
+	} else {
+		linuxFileAttr := finfo.Sys().(*syscall.Stat_t)
+		if linuxFileAttr.Size < 1024 || linuxFileAttr == nil || time.Now().Unix()-linuxFileAttr.Ctimespec.Sec > 24*60*60*30 {
+			needRefresh = true
+		}
+	}
+
+	if needRefresh {
+		go func() {
+			client := &http.Client{}
+			req, _ := http.NewRequest("GET", "https://raw.githubusercontent.com/KHwang9883/MobileModels/master/scripts/models.csv", nil)
+			resp, _ := client.Do(req)
+			f, _ := os.Create("PhoneModels.txt")
+			_, _ = io.Copy(f, resp.Body)
+		}()
+	}
 }
 
 func Parse(userAgent string) UserAgent {
@@ -59,6 +89,36 @@ func Parse(userAgent string) UserAgent {
 		result.DevBrand = "Hinova"
 	} else {
 		result.DevBrand = parseBrand(result.DevModel, userAgent)
+	}
+
+	if result.DevBrand == "Unknown" {
+		f, _ := os.Open("PhoneModels.txt")
+		if f != nil {
+			userAgent = strings.ToLower(userAgent)
+			buf := bufio.NewReader(f)
+			for {
+				line, err := buf.ReadString('\n')
+				if err != nil {
+					break
+				}
+
+				var ary = strings.Split(line, ",")
+				if len(ary) >= 6 {
+					if strings.Contains(userAgent, strings.ToLower(ary[0])) {
+						if result.DevModel == "Unknown" {
+							result.DevModel = ary[0]
+						}
+						result.DevBrand = ary[2]
+						result.DevBrand = strings.ToUpper(result.DevBrand[:1]) + result.DevBrand[1:]
+						if ary[1] == "mob" {
+							result.DevType = 1
+						} else if ary[1] == "pad" {
+							result.DevType = 2
+						}
+					}
+				}
+			}
+		}
 	}
 
 	var brand = strings.ToUpper(result.DevBrand)

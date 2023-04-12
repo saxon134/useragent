@@ -6,8 +6,7 @@
 
 小米、华为等品牌有不少机型UA不标准，需要特殊处理
 
-手机品牌收集参考：https://github.com/matiji66/MobileModels
-
+手机品牌收集参考：https://github.com/KHwang9883/MobileModels/blob/master/scripts/models.csv
 
 ### 安装
 ```
