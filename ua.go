@@ -1,12 +1,14 @@
 package useragent
 
 import (
-	"bufio"
 	"github.com/mileusna/useragent"
+	"github.com/saxon134/go-utils/saData"
 	"github.com/saxon134/go-utils/saData/saHit"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -38,8 +40,55 @@ func init() {
 			client := &http.Client{}
 			req, _ := http.NewRequest("GET", "https://raw.githubusercontent.com/KHwang9883/MobileModels/master/scripts/models.csv", nil)
 			resp, _ := client.Do(req)
-			f, _ := os.Create("PhoneModels.txt")
-			_, _ = io.Copy(f, resp.Body)
+			if resp == nil {
+				return
+			}
+
+			//过滤只保存mob、pad类型
+			buf := new(strings.Builder)
+			_, _ = io.Copy(buf, resp.Body)
+			var str = buf.String()
+			var lines = strings.Split(str, "\n")
+			var models = make([]string, 0, len(lines))
+			for idx, line := range lines {
+				re, _ := regexp.Compile(`"*"`)
+				line = re.ReplaceAllString(line, ",")
+				var items = strings.Split(line, ",")
+				//格式校验，如果格式有变化则不处理
+				if idx == 0 {
+					if len(items) < 7 || items[0] != "model" || items[1] != "dtype" || items[2] != "brand" {
+						return
+					}
+				}
+
+				if len(items) >= 7 {
+					if items[1] == "mob" || items[1] == "pad" {
+						var brand = items[2]
+						var ary = strings.Split(items[0], " ")
+						var model = ary[len(ary)-1]
+						var modelName = items[6]
+						{
+							ary = strings.Split(modelName, "（")
+							modelName = ary[0]
+							modelName = strings.Split(modelName, "(")[0]
+							ary = strings.Split(modelName, " ")
+							modelName = ary[0]
+							if len(ary) >= 2 {
+								modelName += " " + ary[1]
+							}
+						}
+						models = append(models, saData.JoinStr(saHit.Str(items[1] == "mob", "m", "p"), ",", brand, ",", model, ",", modelName))
+					}
+				}
+			}
+
+			//保存手机型号数据
+			f, err := os.Create("PhoneModels.txt")
+			if err != nil {
+				log.Println("Create PhoneModels file error :", err)
+				return
+			}
+			_, _ = io.Copy(f, strings.NewReader(strings.Join(models, "\n")))
 		}()
 	}
 }
@@ -63,6 +112,13 @@ func Parse(userAgent string) UserAgent {
 		result.DevType = 2
 	} else if ua.Desktop {
 		result.DevType = 3
+	}
+
+	//从文件读取手机型号数据
+	var fileModels = []string{}
+	buf, _ := os.ReadFile("PhoneModels.txt")
+	if buf != nil {
+		fileModels = strings.Split(string(buf), "\n")
 	}
 
 	result.DevBrand = ""
@@ -92,38 +148,56 @@ func Parse(userAgent string) UserAgent {
 	}
 
 	if result.DevBrand == "Unknown" {
-		f, _ := os.Open("PhoneModels.txt")
-		if f != nil {
+		if fileModels != nil {
 			userAgent = strings.ToLower(userAgent)
-			buf := bufio.NewReader(f)
-			for {
-				line, err := buf.ReadString('\n')
-				if err != nil {
-					break
-				}
-
+			for _, line := range fileModels {
 				var ary = strings.Split(line, ",")
-				if len(ary) >= 6 {
+				if len(ary) >= 2 {
 					if strings.Contains(userAgent, strings.ToLower(ary[0])) {
-						if result.DevModel == "Unknown" {
-							result.DevModel = ary[0]
+						if ary[0] == "m" {
+							result.DevType = 1 //手机
+						} else if ary[0] == "p" {
+							result.DevType = 2 //平板
 						}
-						result.DevBrand = ary[2]
+
+						result.DevBrand = ary[1]
 						result.DevBrand = strings.ToUpper(result.DevBrand[:1]) + result.DevBrand[1:]
-						if ary[1] == "mob" {
-							result.DevType = 1
-						} else if ary[1] == "pad" {
-							result.DevType = 2
+
+						if len(ary) >= 4 {
+							result.DevModel = ary[3]
+						} else if len(ary) >= 3 {
+							result.DevModel = ary[2]
 						}
 					}
 				}
 			}
 		}
-	}
+	} else {
+		var brand = strings.ToUpper(result.DevBrand)
+		result.DevModel = strings.TrimPrefix(result.DevModel, brand+" ")
+		result.DevModel = strings.TrimPrefix(result.DevModel, brand)
+		if fileModels != nil {
+			for _, line := range fileModels {
+				var ary = strings.Split(line, ",")
+				if strings.Contains(result.DevModel, strings.ToLower(ary[0])) {
+					if ary[0] == "m" {
+						result.DevType = 1 //手机
+					} else if ary[0] == "p" {
+						result.DevType = 2 //平板
+					}
 
-	var brand = strings.ToUpper(result.DevBrand)
-	result.DevModel = strings.TrimPrefix(result.DevModel, brand+" ")
-	result.DevModel = strings.TrimPrefix(result.DevModel, brand)
+					result.DevBrand = ary[1]
+					result.DevBrand = strings.ToUpper(result.DevBrand[:1]) + result.DevBrand[1:]
+
+					if len(ary) >= 4 {
+						result.DevModel = ary[3]
+					} else if len(ary) >= 3 {
+						result.DevModel = ary[2]
+					}
+				}
+			}
+		}
+	}
 
 	return result
 }
