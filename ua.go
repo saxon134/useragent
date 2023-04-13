@@ -134,73 +134,15 @@ func Parse(userAgent string) UserAgent {
 	}
 
 	//从文件读取手机型号数据
-	var fileModels = []string{}
+	var fileModels []string
 	buf, _ := os.ReadFile("PhoneModels.txt")
 	if buf != nil {
 		fileModels = strings.Split(string(buf), "\n")
-	}
-
-	result.DevBrand = ""
-	result.DevModel = saHit.Str(ua.Device != "", ua.Device, "Unknown")
-	if result.OS == "iOS" || result.OS == "macOS" {
-		result.DevBrand = "Apple"
-	} else if strings.Contains(userAgent, "HUAWEI") {
-		result.DevBrand = "Huawei"
-	} else if strings.Contains(userAgent, "HONOR") {
-		result.DevBrand = "Honor"
-	} else if strings.Contains(userAgent, "vivo") {
-		result.DevBrand = "Vivo"
-	} else if strings.Contains(userAgent, "OPPO") {
-		result.DevBrand = "Oppo"
-	} else if strings.Contains(userAgent, "Redmi") {
-		result.DevBrand = "Redmi"
-	} else if strings.HasPrefix(result.DevModel, "SM-") {
-		result.DevBrand = "Samsung"
-	} else if strings.HasPrefix(result.DevModel, "ONEPLUS") {
-		result.DevBrand = "Oneplus"
-	} else if strings.HasPrefix(result.DevModel, "ZTE") {
-		result.DevBrand = "ZTE"
-	} else if strings.Contains(userAgent, "Hinova") {
-		result.DevBrand = "Hinova"
-	} else if strings.Contains(userAgent, "Apache") {
-		result.DevBrand = "Apache"
-	} else {
-		result.DevBrand = parseBrand(result.DevModel, userAgent)
-	}
-
-	if result.DevBrand == "Unknown" {
-		if fileModels != nil {
-			userAgent = strings.ToLower(userAgent)
-			for _, line := range fileModels {
-				var ary = strings.Split(line, ",")
-				if len(ary) >= 3 {
-					if strings.Contains(userAgent, strings.ToLower(ary[2])) {
-						if ary[0] == "m" {
-							result.DevType = 1 //手机
-						} else if ary[0] == "p" {
-							result.DevType = 2 //平板
-						}
-
-						result.DevBrand = ary[1]
-						result.DevBrand = strings.ToUpper(result.DevBrand[:1]) + result.DevBrand[1:]
-
-						if len(ary) >= 4 {
-							result.DevModel = ary[3]
-						} else {
-							result.DevModel = ary[2]
-						}
-					}
-				}
-			}
-		}
-	} else {
-		var brand = strings.ToUpper(result.DevBrand)
-		result.DevModel = strings.TrimPrefix(result.DevModel, brand+" ")
-		result.DevModel = strings.TrimPrefix(result.DevModel, brand)
-		if fileModels != nil {
-			for _, line := range fileModels {
-				var ary = strings.Split(line, ",")
-				if strings.Contains(result.DevModel, strings.ToLower(ary[0])) {
+		var lowerUserAgent = strings.ToLower(userAgent)
+		for _, line := range fileModels {
+			var ary = strings.Split(line, ",")
+			if len(ary) >= 3 {
+				if strings.Contains(lowerUserAgent, strings.ToLower(ary[2])) {
 					if ary[0] == "m" {
 						result.DevType = 1 //手机
 					} else if ary[0] == "p" {
@@ -212,7 +154,7 @@ func Parse(userAgent string) UserAgent {
 
 					if len(ary) >= 4 {
 						result.DevModel = ary[3]
-					} else if len(ary) >= 3 {
+					} else {
 						result.DevModel = ary[2]
 					}
 				}
@@ -220,5 +162,37 @@ func Parse(userAgent string) UserAgent {
 		}
 	}
 
+	if result.DevBrand == "" || result.DevBrand == "Unknown" {
+		result.DevModel = saHit.Str(ua.Name != "", ua.Name, "Unknown")
+		if result.OS == "iOS" || result.OS == "macOS" {
+			result.DevBrand = "Apple"
+		} else if strings.Contains(userAgent, "HUAWEI") {
+			result.DevBrand = "Huawei"
+		} else if strings.Contains(userAgent, "HONOR") {
+			result.DevBrand = "Honor"
+		} else if strings.Contains(userAgent, "vivo") {
+			result.DevBrand = "Vivo"
+		} else if strings.Contains(userAgent, "OPPO") {
+			result.DevBrand = "Oppo"
+		} else if strings.Contains(userAgent, "Redmi") {
+			result.DevBrand = "Redmi"
+		} else if strings.HasPrefix(result.DevModel, "SM-") {
+			result.DevBrand = "Samsung"
+		} else if strings.HasPrefix(result.DevModel, "ONEPLUS") {
+			result.DevBrand = "Oneplus"
+		} else if strings.HasPrefix(result.DevModel, "ZTE") {
+			result.DevBrand = "ZTE"
+		} else if strings.Contains(userAgent, "Hinova") {
+			result.DevBrand = "Hinova"
+		} else if strings.Contains(userAgent, "Apache") {
+			result.DevBrand = "Apache"
+		} else {
+			result.DevBrand = parseBrand(result.DevModel, userAgent)
+		}
+
+		var brand = strings.ToUpper(result.DevBrand)
+		result.DevModel = strings.TrimPrefix(result.DevModel, brand+" ")
+		result.DevModel = strings.TrimPrefix(result.DevModel, brand)
+	}
 	return result
 }
