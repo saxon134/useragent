@@ -152,8 +152,8 @@ func Parse(userAgent string) UserAgent {
 			userAgent = strings.ToLower(userAgent)
 			for _, line := range fileModels {
 				var ary = strings.Split(line, ",")
-				if len(ary) >= 2 {
-					if strings.Contains(userAgent, strings.ToLower(ary[0])) {
+				if len(ary) >= 3 {
+					if strings.Contains(userAgent, strings.ToLower(ary[2])) {
 						if ary[0] == "m" {
 							result.DevType = 1 //手机
 						} else if ary[0] == "p" {
@@ -165,7 +165,7 @@ func Parse(userAgent string) UserAgent {
 
 						if len(ary) >= 4 {
 							result.DevModel = ary[3]
-						} else if len(ary) >= 3 {
+						} else {
 							result.DevModel = ary[2]
 						}
 					}
