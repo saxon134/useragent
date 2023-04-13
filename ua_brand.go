@@ -61,11 +61,13 @@ func parseBrand(model string, userAgent string) string {
 		}
 
 		var start = strings.Index(userAgent, "Build/")
-		var end = strings.Index(userAgent[start:], model)
-		if end > 6 {
-			var brand = userAgent[start+6 : start+end]
-			if strings.Contains(brand, " ") == false {
-				return brand
+		if start >= 0 {
+			var end = strings.Index(userAgent[start:], model)
+			if end > 6 {
+				var brand = userAgent[start+6 : start+end]
+				if strings.Contains(brand, " ") == false {
+					return brand
+				}
 			}
 		}
 	}
