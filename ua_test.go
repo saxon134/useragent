@@ -19,6 +19,7 @@ func TestUa(t *testing.T) {
 	//var str = "Mozilla/5.0 (Linux; Android 9; Xenium S701 Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.99 Mobile Safari/537.36 haokan/7.29.0.10 (Baidu; P1 9) nadcorevendor/5.12.0.23"
 	//var str = "Mozilla/5.0 (Linux; Android 7.0; S3 Prow Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/97.0.4692.98 Safari/537.36 T7/13.19 light/1.0 SP-engine/2.57.0 baiduboxapp/13.19.5.10 (Baidu; P1 7.0)"
 	var str = "Apache-HttpClient/4.5.13 (Java/1.8.0_201)"
+	//var str = ""
 	ua := Parse(str)
 	fmt.Println("OS:", ua.OS, "OSVersion:", ua.OSVersion, "DevType:", ua.DevType, "DevBrand:", ua.DevBrand, "DevModel:", ua.DevModel)
 }

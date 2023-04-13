@@ -114,6 +114,25 @@ func Parse(userAgent string) UserAgent {
 		result.DevType = 3
 	}
 
+	if userAgent == "" {
+		result.DevBrand = "Empty"
+		result.DevModel = saHit.Str(ua.Device != "", ua.Device, "Unknown")
+		return result
+	}
+
+	//机器人
+	if ua.Bot {
+		result.DevBrand = "Robot"
+		result.DevModel = saHit.Str(ua.Name != "", ua.Name, "Robot")
+		return result
+	}
+
+	if strings.Contains(userAgent, "Apache-HttpClient") {
+		result.DevBrand = "Apache"
+		result.DevModel = ua.Name
+		return result
+	}
+
 	//从文件读取手机型号数据
 	var fileModels = []string{}
 	buf, _ := os.ReadFile("PhoneModels.txt")
@@ -143,6 +162,8 @@ func Parse(userAgent string) UserAgent {
 		result.DevBrand = "ZTE"
 	} else if strings.Contains(userAgent, "Hinova") {
 		result.DevBrand = "Hinova"
+	} else if strings.Contains(userAgent, "Apache") {
+		result.DevBrand = "Apache"
 	} else {
 		result.DevBrand = parseBrand(result.DevModel, userAgent)
 	}
