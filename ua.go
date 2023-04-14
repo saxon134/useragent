@@ -10,7 +10,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -22,15 +21,17 @@ type UserAgent struct {
 	DevModel  string //手机型号，如：mate50
 }
 
+var models_cache []string
+var models_use_at time.Time
+
 func init() {
 	//文件不存在，或者下载时间超过30天
 	var needRefresh = false
-	finfo, _ := os.Stat("PhoneModels.txt")
-	if finfo == nil {
+	f, err := os.Stat("PhoneModels.txt")
+	if err != nil {
 		needRefresh = true
 	} else {
-		linuxFileAttr := finfo.Sys().(*syscall.Stat_t)
-		if linuxFileAttr.Size < 1024 || linuxFileAttr == nil || time.Now().Unix()-linuxFileAttr.Ctimespec.Sec > 24*60*60*30 {
+		if f.Size() < 1024 || time.Now().Unix()-f.ModTime().Unix() > 24*60*60*30 {
 			needRefresh = true
 		}
 	}
@@ -89,8 +90,20 @@ func init() {
 				return
 			}
 			_, _ = io.Copy(f, strings.NewReader(strings.Join(models, "\n")))
+			f.Close()
 		}()
 	}
+
+	//models_cache过期删除
+	go func() {
+		for {
+			time.Sleep(time.Second * 30)
+			if models_use_at.IsZero() == false && models_use_at.Before(time.Now().Add(time.Second*30)) {
+				models_use_at = time.Time{}
+				models_cache = nil
+			}
+		}
+	}()
 }
 
 func Parse(userAgent string) UserAgent {
@@ -134,29 +147,34 @@ func Parse(userAgent string) UserAgent {
 	}
 
 	//从文件读取手机型号数据
-	var fileModels []string
-	buf, _ := os.ReadFile("PhoneModels.txt")
-	if buf != nil {
-		fileModels = strings.Split(string(buf), "\n")
-		var lowerUserAgent = strings.ToLower(userAgent)
-		for _, line := range fileModels {
-			var ary = strings.Split(line, ",")
-			if len(ary) >= 3 {
-				if strings.Contains(lowerUserAgent, strings.ToLower(ary[2])) {
-					if ary[0] == "m" {
-						result.DevType = 1 //手机
-					} else if ary[0] == "p" {
-						result.DevType = 2 //平板
-					}
+	if len(models_cache) == 0 {
+		buf, _ := os.ReadFile("PhoneModels.txt")
+		if buf != nil {
+			models_cache = strings.Split(string(buf), "\n")
+			models_use_at = time.Now()
+		}
+	} else {
+		models_use_at = time.Now() //刷新
+	}
 
-					result.DevBrand = ary[1]
-					result.DevBrand = strings.ToUpper(result.DevBrand[:1]) + result.DevBrand[1:]
+	var lowerUserAgent = strings.ToLower(userAgent)
+	for _, line := range models_cache {
+		var ary = strings.Split(line, ",")
+		if len(ary) >= 3 {
+			if strings.Contains(lowerUserAgent, strings.ToLower(ary[2])) {
+				if ary[0] == "m" {
+					result.DevType = 1 //手机
+				} else if ary[0] == "p" {
+					result.DevType = 2 //平板
+				}
 
-					if len(ary) >= 4 {
-						result.DevModel = ary[3]
-					} else {
-						result.DevModel = ary[2]
-					}
+				result.DevBrand = ary[1]
+				result.DevBrand = strings.ToUpper(result.DevBrand[:1]) + result.DevBrand[1:]
+
+				if len(ary) >= 4 {
+					result.DevModel = ary[3]
+				} else {
+					result.DevModel = ary[2]
 				}
 			}
 		}
